@@ -1,4 +1,9 @@
-# Working in this repo
+# Flashcards — working in this repo
+
+Spaced-repetition flashcards: decks are folders of one-file-per-card records in the
+user's private store or a shared space; SM-2 progress is always private (see
+`README.md` for the storage layout, `src/lib/store.ts` for the persistence pattern —
+private store first, powerbox for spaces, `pollDir` for co-editors' writes).
 
 This is an **immediately.run app**: React + TypeScript that loads from GitHub and
 transpiles in the browser (no server, no build step at runtime). Keep the rules
