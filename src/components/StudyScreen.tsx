@@ -19,6 +19,8 @@ interface Props {
 interface Session {
   queue: Card[];
   initialSize: number;
+  /** Cards re-inserted after an "again" — they lengthen the session. */
+  requeued: number;
   seen: string[];
   summary: Summary;
 }
@@ -33,6 +35,7 @@ const GRADES: Array<{ g: Grade; label: string; key: string }> = [
 const makeSession = (queue: Card[], now: number): Session => ({
   queue,
   initialSize: queue.length,
+  requeued: 0,
   seen: [],
   summary: emptySummary(now),
 });
@@ -79,12 +82,14 @@ function StudyScreen({ boot, source, deckId, deckName, onExit }: Props) {
       const now = Date.now();
       void record(current.id, applyGrade(currentProgress, g, now));
       const rest = session.queue.slice(1);
-      if (g === 'again') rest.splice(Math.min(REQUEUE_AFTER, rest.length), 0, current);
+      const again = g === 'again';
+      if (again) rest.splice(Math.min(REQUEUE_AFTER, rest.length), 0, current);
       const seen = session.seen.includes(current.id) ? session.seen : [...session.seen, current.id];
       setFlipped(false);
       setOverride({
         ...session,
         queue: rest,
+        requeued: session.requeued + (again ? 1 : 0),
         seen,
         summary: {
           ...session.summary,
@@ -155,9 +160,8 @@ function StudyScreen({ boot, source, deckId, deckName, onExit }: Props) {
     );
   }
 
-  const remaining = session.queue.length;
-  const done = Math.max(0, session.initialSize - remaining);
-  const extra = Math.max(0, remaining - (session.initialSize - done));
+  const total = session.initialSize + session.requeued;
+  const done = total - session.queue.length;
   return (
     <div className="study">
       <div className="study-head">
@@ -165,12 +169,12 @@ function StudyScreen({ boot, source, deckId, deckName, onExit }: Props) {
           ← {deckName}
         </button>
         <span className="mono progress-label">
-          {done} / {session.initialSize}
-          {extra > 0 ? ` (+${extra} again)` : ''}
+          {done} / {total}
+          {session.requeued > 0 ? ` (+${session.requeued} again)` : ''}
         </span>
       </div>
       <div className="progress-bar" aria-hidden="true">
-        <span style={{ width: `${session.initialSize ? (done / session.initialSize) * 100 : 0}%` }} />
+        <span style={{ width: `${total ? (done / total) * 100 : 0}%` }} />
       </div>
 
       <FlipCard key={current.id} front={current.front} back={current.back} flipped={flipped} onFlip={() => setFlipped(true)} />

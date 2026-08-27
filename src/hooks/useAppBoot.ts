@@ -1,6 +1,6 @@
 // Boot sequence: open the private store FIRST, load config, seed the sample deck
 // on first run, then silently re-open a remembered shared space (no prompt).
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@immediately-run/sdk/auth';
 import type { Store } from '../lib/store';
 import {
@@ -55,11 +55,10 @@ export function useAppBoot(): AppBoot {
   const [sharedBusy, setSharedBusy] = useState(false);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const booted = useRef(false);
 
   useEffect(() => {
-    if (booted.current) return;
-    booted.current = true;
+    // Runs twice under StrictMode; every step is idempotent (fixed seed ids), so the
+    // superseded run simply stops publishing state.
     let alive = true;
     (async () => {
       try {

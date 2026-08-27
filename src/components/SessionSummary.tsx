@@ -61,7 +61,7 @@ function SessionSummary({ summary, remainingNew, onAgain, onCram, onDone, nothin
           Cram all cards
         </button>
         <button type="button" className="btn btn-ghost" onClick={onDone}>
-          Back to deck
+          Done
         </button>
       </div>
     </div>
