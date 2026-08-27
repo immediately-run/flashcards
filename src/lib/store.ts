@@ -132,7 +132,16 @@ export async function readJson<T>(path: string, fallback: T): Promise<T> {
 export async function writeJson(path: string, value: unknown): Promise<void> {
   const dir = path.slice(0, path.lastIndexOf('/'));
   if (dir) await ensureDir(dir);
-  await fs.promises.writeFile(path, await padToExistingSize(path, JSON.stringify(value, null, 2)), 'utf8');
+  const text = JSON.stringify(value, null, 2);
+  try {
+    await fs.promises.writeFile(path, await padToExistingSize(path, text), 'utf8');
+  } catch (e) {
+    // Two concurrent creates of the same NEW file race on the host port and the
+    // loser gets EEXIST (observed 2026-08-27, StrictMode double boot seeding the
+    // sample deck). The file exists now, so a second write is a plain overwrite.
+    if ((e as { code?: string }).code !== 'EEXIST') throw e;
+    await fs.promises.writeFile(path, await padToExistingSize(path, text), 'utf8');
+  }
 }
 
 export async function readText(path: string): Promise<string | null> {

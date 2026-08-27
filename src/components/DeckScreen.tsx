@@ -73,10 +73,18 @@ function DeckScreen({ boot, source, deckId, onBack, onStudy }: Props) {
     );
   }
 
+  // Optimistic appends must dedupe by id: on a shared deck the 3 s poll can see the
+  // new file, reload and replace the list BEFORE the write RPC resolves, so a plain
+  // append listed the card twice (observed on host 2026-08-27).
+  const appendCards = (added: Card[]) =>
+    setCards((cs) => {
+      const have = new Set(cs.map((c) => c.id));
+      return [...cs, ...added.filter((c) => !have.has(c.id))];
+    });
   const addCard = async (d: CardDraft) => {
     const card: Card = { id: newId(), ...d, created: Date.now() };
     await writeCard(store.root, deckId, card);
-    setCards((cs) => [...cs, card]);
+    appendCards([card]);
   };
   const saveCard = async (card: Card, d: CardDraft) => {
     const next = { ...card, ...d };
@@ -91,7 +99,7 @@ function DeckScreen({ boot, source, deckId, onBack, onStudy }: Props) {
     const t = Date.now();
     const added: Card[] = rows.map((r, i) => ({ id: newId(), ...r, created: t + i }));
     for (const c of added) await writeCard(store.root, deckId, c);
-    setCards((cs) => [...cs, ...added]);
+    appendCards(added);
     setNote(`Imported ${added.length} ${added.length === 1 ? 'card' : 'cards'}.`);
   };
   const saveDetails = async () => {

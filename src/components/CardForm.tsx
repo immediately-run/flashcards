@@ -27,6 +27,12 @@ function CardForm({ initial, submitLabel, onSubmit, onCancel }: Props) {
     setBusy(true);
     try {
       await onSubmit({ front: front.trim(), back: back.trim(), tags: parseTags(tags) });
+      if (!initial) {
+        // Add mode stays open for rapid entry — clear it so a second submit
+        // cannot add the same card again. Tags are kept (usually shared).
+        setFront('');
+        setBack('');
+      }
     } finally {
       setBusy(false);
     }

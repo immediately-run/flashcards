@@ -45,9 +45,31 @@ const describe = (e: unknown): string => {
 const isCancelled = (e: unknown): boolean =>
   !!e && typeof e === 'object' && 'code' in e && (e as { code?: string }).code === 'cancelled';
 
+/** Open the private store, load config and seed the sample deck — ONCE per module.
+ *  StrictMode runs the boot effect twice; letting both runs seed concurrently made
+ *  the second lose a create race on the host port (EEXIST on deck.json), so the
+ *  second run awaits the first's promise instead. */
+let bootOnce: Promise<{ priv: Store; cfg: AppConfig }> | null = null;
+function bootPrivate(): Promise<{ priv: Store; cfg: AppConfig }> {
+  bootOnce ??= (async () => {
+    const priv = await openPrivateStore('data');
+    const cfg = { ...DEFAULT_CONFIG, ...(await readJson<Partial<AppConfig>>(configPath(priv.root), {})) };
+    if (!cfg.seeded && priv.mode === 'rw' && (await listDecks(priv.root)).length === 0) {
+      await writeDeck(priv.root, SEED_DECK);
+      for (const c of SEED_CARDS) await writeCard(priv.root, SEED_DECK.id, c);
+      cfg.seeded = true;
+      await writeJson(configPath(priv.root), cfg);
+    }
+    return { priv, cfg };
+  })().catch((e) => {
+    bootOnce = null; // let a remount retry
+    throw e;
+  });
+  return bootOnce;
+}
+
 export function useAppBoot(): AppBoot {
   const auth = useAuth();
-  const who = auth.user?.login?.trim() || 'someone';
 
   const [privateStore, setPrivateStore] = useState<Store | null>(null);
   const [config, setConfig] = useState<AppConfig>(DEFAULT_CONFIG);
@@ -56,20 +78,15 @@ export function useAppBoot(): AppBoot {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const who = config.displayName?.trim() || auth.user?.login?.trim() || 'someone';
+
   useEffect(() => {
-    // Runs twice under StrictMode; every step is idempotent (fixed seed ids), so the
-    // superseded run simply stops publishing state.
+    // Runs twice under StrictMode; both runs share one bootPrivate() promise and
+    // the superseded run simply stops publishing state.
     let alive = true;
     (async () => {
       try {
-        const priv = await openPrivateStore('data');
-        const cfg = { ...DEFAULT_CONFIG, ...(await readJson<Partial<AppConfig>>(configPath(priv.root), {})) };
-        if (!cfg.seeded && priv.mode === 'rw' && (await listDecks(priv.root)).length === 0) {
-          await writeDeck(priv.root, SEED_DECK);
-          for (const c of SEED_CARDS) await writeCard(priv.root, SEED_DECK.id, c);
-          cfg.seeded = true;
-          await writeJson(configPath(priv.root), cfg);
-        }
+        const { priv, cfg } = await bootPrivate();
         if (!alive) return;
         setPrivateStore(priv);
         setConfig(cfg);

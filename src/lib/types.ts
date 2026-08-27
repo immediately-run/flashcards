@@ -52,4 +52,6 @@ export interface AppConfig {
   spaceId?: string;
   /** Sample deck already written once — never re-seed after the user deletes it. */
   seeded?: boolean;
+  /** Shown as the `by` author on decks; the host gives stage apps no login. */
+  displayName?: string;
 }

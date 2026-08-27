@@ -89,6 +89,7 @@ textarea { resize: vertical; font-family: var(--sans); }
 
 /* ---- home ---- */
 .hero-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; flex-wrap: wrap; padding: 12px 0 8px; }
+.settings { display: flex; gap: 16px; flex-wrap: wrap; }
 .setting { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--ink-2); }
 .setting input { width: 120px; font-family: var(--mono); }
 .sechead { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 40px 0 16px; }

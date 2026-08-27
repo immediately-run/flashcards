@@ -19,6 +19,14 @@ function HomeScreen({ boot, onOpenDeck, onStudyDeck }: Props) {
   const mine = useDeckList(privateStore?.root ?? null);
   const theirs = useDeckList(shared?.root ?? null, true);
   const [creating, setCreating] = useState<Source | null>(null);
+  // Draft so the name is written once on blur/Enter, not per keystroke.
+  const [nameDraft, setNameDraft] = useState<string | null>(null);
+  const commitName = () => {
+    if (nameDraft === null) return;
+    const next = nameDraft.trim();
+    setNameDraft(null);
+    if (next !== (config.displayName ?? '')) void updateConfig({ displayName: next || undefined });
+  };
 
   const createDeck = async (source: Source, name: string, description: string) => {
     const root = source === 'shared' ? shared?.root : privateStore?.root;
@@ -38,16 +46,31 @@ function HomeScreen({ boot, onOpenDeck, onStudyDeck }: Props) {
           </h1>
           <p className="lede">Spaced repetition, one card at a time. Decks are folders you can share with a class.</p>
         </div>
-        <label className="setting">
-          <span className="mono">New cards / day</span>
-          <input
-            type="number"
-            min={0}
-            max={500}
-            value={config.newPerDay}
-            onChange={(e) => void updateConfig({ newPerDay: Math.max(0, Math.min(500, Number(e.target.value) || 0)) })}
-          />
-        </label>
+        <div className="settings">
+          <label className="setting">
+            <span className="mono">Your name</span>
+            <input
+              type="text"
+              maxLength={40}
+              placeholder={boot.who}
+              value={nameDraft ?? config.displayName ?? ''}
+              onChange={(e) => setNameDraft(e.target.value)}
+              onBlur={commitName}
+              onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+              disabled={!privateStore || privateStore.mode !== 'rw'}
+            />
+          </label>
+          <label className="setting">
+            <span className="mono">New cards / day</span>
+            <input
+              type="number"
+              min={0}
+              max={500}
+              value={config.newPerDay}
+              onChange={(e) => void updateConfig({ newPerDay: Math.max(0, Math.min(500, Number(e.target.value) || 0)) })}
+            />
+          </label>
+        </div>
       </section>
 
       <section>
