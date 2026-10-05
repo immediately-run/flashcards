@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { DeckSummary } from '../lib/types';
 import { decksDir, listDecks } from '../lib/deckStore';
-import { pollDir } from '../lib/store';
+import { watchDir } from '../lib/store';
 
-/** Decks under a store root. With `poll`, re-lists when the decks dir changes
+/** Decks under a store root. With `watch`, re-lists when the decks dir changes
  *  (shared spaces have no remote watch events). */
-export function useDeckList(root: string | null, poll = false) {
+export function useDeckList(root: string | null, watch = false) {
   const [decks, setDecks] = useState<DeckSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -23,12 +23,12 @@ export function useDeckList(root: string | null, poll = false) {
       setDecks(d);
       setLoading(false);
     });
-    const stop = poll ? pollDir(decksDir(root), () => void reload(), 3000) : undefined;
+    const stop = watch ? watchDir(decksDir(root), () => void reload()) : undefined;
     return () => {
       alive = false;
       stop?.();
     };
-  }, [root, poll, reload]);
+  }, [root, watch, reload]);
 
   return { decks, loading, reload };
 }

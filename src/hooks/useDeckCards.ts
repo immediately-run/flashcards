@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Card } from '../lib/types';
 import { cardsDir, listCards } from '../lib/deckStore';
-import { pollDir } from '../lib/store';
+import { watchDir } from '../lib/store';
 
-/** Cards of one deck. With `poll`, the cards dir is polled every 3 s so
+/** Cards of one deck. With `watch`, the cards dir is watched (R3-901 — the relay covers remote writes) so
  *  co-editors' additions show up while a shared deck is open. */
-export function useDeckCards(root: string | null, deckId: string, poll = false) {
+export function useDeckCards(root: string | null, deckId: string, watch = false) {
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -23,12 +23,12 @@ export function useDeckCards(root: string | null, deckId: string, poll = false) 
       setCards(c);
       setLoading(false);
     });
-    const stop = poll ? pollDir(cardsDir(root, deckId), () => void reload(), 3000) : undefined;
+    const stop = watch ? watchDir(cardsDir(root, deckId), () => void reload()) : undefined;
     return () => {
       alive = false;
       stop?.();
     };
-  }, [root, deckId, poll, reload]);
+  }, [root, deckId, watch, reload]);
 
   return { cards, loading, reload, setCards };
 }
