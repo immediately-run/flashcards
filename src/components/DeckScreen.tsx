@@ -73,7 +73,7 @@ function DeckScreen({ boot, source, deckId, onBack, onStudy }: Props) {
     );
   }
 
-  // Optimistic appends must dedupe by id: on a shared deck the 3 s poll can see the
+  // Optimistic appends must dedupe by id: on a shared deck the watch can see the
   // new file, reload and replace the list BEFORE the write RPC resolves, so a plain
   // append listed the card twice (observed on host 2026-08-27).
   const appendCards = (added: Card[]) =>

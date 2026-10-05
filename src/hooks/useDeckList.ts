@@ -3,7 +3,7 @@ import type { DeckSummary } from '../lib/types';
 import { decksDir, listDecks } from '../lib/deckStore';
 import { watchDir } from '../lib/store';
 
-/** Decks under a store root. With `poll`, re-lists when the decks dir changes
+/** Decks under a store root. With `watch`, re-lists when the decks dir changes
  *  (shared spaces have no remote watch events). */
 export function useDeckList(root: string | null, watch = false) {
   const [decks, setDecks] = useState<DeckSummary[]>([]);
